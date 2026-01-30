@@ -39,5 +39,8 @@ cache/
 # Claude Code local settings
 .claude/
 
-# Marketing content (not tracked)
-marketing/
+# Admin content (not tracked)
+admin/
+
+# Feature planning (not tracked)
+.features/
