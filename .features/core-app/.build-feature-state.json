@@ -1,0 +1,70 @@
+{
+  "feature_name": "voxtube-core",
+  "mode": "standard",
+  "current_phase": "understand",
+  "completed_phases": ["setup"],
+  "checkpoints": {
+    "understand": {
+      "completed": false,
+      "explain_confirmed": false,
+      "user_input": null,
+      "understanding_confirmed": false,
+      "timestamp": null
+    },
+    "clarify": {
+      "completed": false,
+      "approach_explained": false,
+      "user_questions": [],
+      "ai_questions": [],
+      "questions_with_reasoning": [],
+      "summary_confirmed": false
+    },
+    "design": {
+      "completed": false,
+      "methodology_explained": false,
+      "user_approach": null,
+      "sections_presented": [],
+      "comparison_shown": false,
+      "chosen": null,
+      "post_review_complete": false
+    },
+    "review": {
+      "completed": false,
+      "process_explained": false,
+      "user_found": [],
+      "ai_found": [],
+      "findings_presented": false,
+      "summary_confirmed": false
+    },
+    "tasks": {
+      "completed": false,
+      "methodology_explained": false,
+      "dependencies_explained": false,
+      "task_count": 0,
+      "validation_complete": false
+    },
+    "build": {
+      "current_task": 0,
+      "tasks_completed": [],
+      "agents_used": [],
+      "feedback_collected": [],
+      "micro_checkpoints_per_task": {}
+    }
+  },
+  "feedback": {
+    "explanations_engaged": 0,
+    "explanations_skipped": 0,
+    "modifications_requested": [],
+    "issues_caught_by_user": [],
+    "task_feedback": {}
+  },
+  "architecture_doc": {
+    "created_at": "2026-01-30",
+    "last_updated": "2026-01-30",
+    "sections_completed": ["setup"],
+    "changelog_entries": ["Initial setup"]
+  },
+  "claude_md_updates": [],
+  "started_at": "2026-01-30",
+  "last_updated": "2026-01-30"
+}
