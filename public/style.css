@@ -115,9 +115,23 @@ a:hover {
   border-bottom: 1px solid var(--border);
 }
 
+.brand-link {
+  text-decoration: none;
+  border: none;
+}
+
+.brand-link:hover {
+  border: none;
+}
+
 .brand h1 {
   font-size: 2rem;
   color: var(--text-main);
+  transition: color var(--trans-fast);
+}
+
+.brand-link:hover h1 {
+  color: var(--primary);
 }
 
 .status-indicator {
