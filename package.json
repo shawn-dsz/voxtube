@@ -16,6 +16,7 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "hono": "^4.11.7"
+    "hono": "^4.11.7",
+    "js-md5": "^0.8.3"
   }
 }
