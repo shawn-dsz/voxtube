@@ -38,3 +38,6 @@ cache/
 
 # Claude Code local settings
 .claude/
+
+# Marketing content (not tracked)
+marketing/
