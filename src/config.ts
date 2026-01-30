@@ -11,6 +11,7 @@ export const config = {
   ytCliPath: process.env.YT_CLI_PATH || 'yt',
   maxTranscriptLength: parseInt(process.env.MAX_TRANSCRIPT_LENGTH || '50000', 10),
   cleanupIntervalHours: parseInt(process.env.CLEANUP_INTERVAL_HOURS || '12', 10),
+  claudeCliPath: process.env.CLAUDE_CLI_PATH || 'claude',
 } as const;
 
 export type Config = typeof config;
