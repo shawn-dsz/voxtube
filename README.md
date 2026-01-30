@@ -8,20 +8,7 @@
 
 Don't want to watch a video? Listen to it instead.
 
-<!-- TODO: Record demo GIF
-Instructions:
-1. Start recording with screen capture tool
-2. Open VoxTube at localhost:3000
-3. Paste a YouTube URL (use a short video)
-4. Click "Get Transcript"
-5. Select a voice
-6. Click "Generate Audio"
-7. Play a few seconds
-8. Stop recording, convert to GIF (max 10MB for GitHub)
-9. Replace this comment with: ![VoxTube Demo](demo.gif)
--->
-
-![VoxTube Screenshot](screenshot.png)
+![VoxTube Demo](demo.gif)
 
 VoxTube fetches the transcript from any YouTube video and converts it to audio using Kokoro TTS, letting you listen to video content like a podcast.
 
