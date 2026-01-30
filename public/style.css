@@ -319,6 +319,27 @@ label {
   white-space: nowrap;
 }
 
+.history-item-delete {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 1.25rem;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: color 0.2s, background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.history-item-delete:hover {
+  color: var(--error);
+  background: rgba(255, 82, 82, 0.1);
+}
+
 .history-empty {
   padding: 1rem;
   text-align: center;

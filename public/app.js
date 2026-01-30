@@ -69,22 +69,52 @@ async function loadHistory() {
             <div class="history-item-meta">${escapeHtml(item.channel)}${item.duration ? ' • ' + item.duration : ''}</div>
           </div>
           <div class="history-item-date">${formatDate(item.createdAt)}</div>
+          <button class="history-item-delete" data-video-id="${item.videoId}" title="Delete from cache">×</button>
         </div>
       `)
       .join('');
 
     historySection.classList.remove('hidden');
 
-    // Add click handlers
+    // Add click handlers for loading video
     historyList.querySelectorAll('.history-item').forEach((el) => {
-      el.addEventListener('click', () => {
+      el.addEventListener('click', (e) => {
+        // Don't trigger if clicking delete button
+        if (e.target.classList.contains('history-item-delete')) return;
         const videoId = el.dataset.videoId;
         urlInput.value = videoId;
         handleFetchAndSummarize();
       });
     });
+
+    // Add click handlers for delete buttons
+    historyList.querySelectorAll('.history-item-delete').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const videoId = btn.dataset.videoId;
+        await handleDeleteCache(videoId);
+      });
+    });
   } catch (err) {
     console.error('Failed to load history:', err);
+  }
+}
+
+// Delete cache for a video
+async function handleDeleteCache(videoId) {
+  try {
+    const res = await fetch(`/api/history/${videoId}`, { method: 'DELETE' });
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to delete cache');
+    }
+
+    // Refresh history list
+    loadHistory();
+  } catch (err) {
+    console.error('Failed to delete cache:', err);
+    showError(err.message);
   }
 }
 
