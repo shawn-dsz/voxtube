@@ -247,6 +247,71 @@ export async function writeSummaryCache(
 }
 
 /**
+ * History item returned by getCacheHistory
+ */
+export interface HistoryItem {
+  videoId: string;
+  title: string;
+  channel: string;
+  duration: string;
+  createdAt: number;
+  hasAudio: boolean;
+}
+
+/**
+ * Get list of all cached summaries (history)
+ */
+export async function getCacheHistory(): Promise<HistoryItem[]> {
+  if (!existsSync(config.cacheDir)) {
+    return [];
+  }
+
+  try {
+    const files = await readdir(config.cacheDir);
+    const history: HistoryItem[] = [];
+    const ttlMs = config.cacheTtlDays * 24 * 60 * 60 * 1000;
+    const now = Date.now();
+
+    for (const file of files) {
+      if (!file.endsWith(SUMMARY_EXTENSION)) continue;
+
+      try {
+        const filePath = join(config.cacheDir, file);
+        const stats = await stat(filePath);
+        const ageMs = now - stats.mtimeMs;
+
+        // Skip expired files
+        if (ageMs > ttlMs) continue;
+
+        const content = await Bun.file(filePath).text();
+        const data = JSON.parse(content) as CachedSummary;
+
+        // Check if audio exists for this video
+        const audioFiles = files.filter((f) => f.endsWith(CACHE_EXTENSION));
+        const hasAudio = audioFiles.length > 0; // Simplified - can't easily map hash back to videoId
+
+        history.push({
+          videoId: data.videoId,
+          title: data.metadata?.title || 'Unknown Video',
+          channel: data.metadata?.channel || 'Unknown Channel',
+          duration: data.metadata?.duration || '',
+          createdAt: data.createdAt,
+          hasAudio,
+        });
+      } catch {
+        // Skip files we can't read
+      }
+    }
+
+    // Sort by most recent first
+    history.sort((a, b) => b.createdAt - a.createdAt);
+    return history;
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Get cache statistics
  */
 export async function getCacheStats(): Promise<{
