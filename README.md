@@ -4,6 +4,8 @@ Convert YouTube videos to audio using high-quality text-to-speech.
 
 **Don't want to watch a video? Listen to it instead.**
 
+![VoxTube Screenshot](screenshot.png)
+
 VoxTube fetches the transcript from any YouTube video and converts it to audio using Kokoro TTS, letting you listen to video content like a podcast.
 
 ## Features
