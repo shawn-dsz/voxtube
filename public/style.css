@@ -1,0 +1,257 @@
+/* VoxTube Styles */
+
+:root {
+  --bg: #0f0f0f;
+  --surface: #1a1a1a;
+  --surface-hover: #252525;
+  --border: #333;
+  --text: #e0e0e0;
+  --text-muted: #888;
+  --primary: #ff4444;
+  --primary-hover: #ff6666;
+  --success: #4caf50;
+  --error: #ff5252;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+.container {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+/* Header */
+header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.tagline {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+}
+
+/* Main sections */
+main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.25rem;
+}
+
+label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: var(--text);
+}
+
+/* URL Input */
+.url-input-row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+#url-input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+#url-input:focus {
+  border-color: var(--primary);
+}
+
+#url-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* Buttons */
+.primary-btn {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.primary-btn:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.primary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Transcript */
+.transcript-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.char-count {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+#transcript-text {
+  width: 100%;
+  height: 200px;
+  margin-top: 0.5rem;
+  padding: 1rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  resize: vertical;
+  outline: none;
+}
+
+#transcript-text:focus {
+  border-color: var(--primary);
+}
+
+/* Voice Selection */
+.voice-row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+#voice-select {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
+  outline: none;
+}
+
+#voice-select:focus {
+  border-color: var(--primary);
+}
+
+/* Audio Player */
+#audio-player {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.cache-status {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.cache-status.hit {
+  color: var(--success);
+}
+
+/* Loading */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Error */
+.error {
+  padding: 1rem 1.25rem;
+  background: rgba(255, 82, 82, 0.1);
+  border: 1px solid var(--error);
+  border-radius: 8px;
+  color: var(--error);
+}
+
+/* Utility */
+.hidden {
+  display: none !important;
+}
+
+/* Footer */
+footer {
+  margin-top: 3rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+footer a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+footer a:hover {
+  text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 500px) {
+  .url-input-row,
+  .voice-row {
+    flex-direction: column;
+  }
+
+  .primary-btn {
+    width: 100%;
+  }
+}

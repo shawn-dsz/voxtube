@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VoxTube - YouTube to Audio</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🎙️ VoxTube</h1>
+      <p class="tagline">Listen to YouTube videos as audio</p>
+    </header>
+
+    <main>
+      <!-- URL Input -->
+      <section class="input-section">
+        <label for="url-input">YouTube URL or Video ID</label>
+        <div class="url-input-row">
+          <input
+            type="text"
+            id="url-input"
+            placeholder="https://youtube.com/watch?v=... or video ID"
+            autocomplete="off"
+          >
+          <button id="fetch-btn" class="primary-btn">Get Transcript</button>
+        </div>
+      </section>
+
+      <!-- Transcript Section (hidden until loaded) -->
+      <section id="transcript-section" class="hidden">
+        <div class="transcript-header">
+          <label for="transcript-text">Transcript</label>
+          <span id="char-count" class="char-count"></span>
+        </div>
+        <textarea
+          id="transcript-text"
+          readonly
+          placeholder="Transcript will appear here..."
+        ></textarea>
+      </section>
+
+      <!-- Voice Selection (hidden until transcript loaded) -->
+      <section id="voice-section" class="hidden">
+        <label for="voice-select">Voice</label>
+        <div class="voice-row">
+          <select id="voice-select"></select>
+          <button id="generate-btn" class="primary-btn">Generate Audio</button>
+        </div>
+      </section>
+
+      <!-- Audio Player (hidden until generated) -->
+      <section id="player-section" class="hidden">
+        <label>Audio Player</label>
+        <audio id="audio-player" controls></audio>
+        <div id="cache-status" class="cache-status"></div>
+      </section>
+
+      <!-- Loading/Error States -->
+      <div id="loading" class="loading hidden">
+        <div class="spinner"></div>
+        <span id="loading-text">Loading...</span>
+      </div>
+
+      <div id="error" class="error hidden"></div>
+    </main>
+
+    <footer>
+      <p>
+        Powered by <a href="https://github.com/shawn-dsz/youtube-transcribe" target="_blank">youtube-transcribe</a>
+        & <a href="https://github.com/remsky/Kokoro-FastAPI" target="_blank">Kokoro TTS</a>
+      </p>
+    </footer>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
