@@ -24,8 +24,9 @@ app.post('/', async (c) => {
     return c.json({ error: 'Missing required fields: videoId, text, voice' }, 400);
   }
 
-  // Validate video ID format (alphanumeric + dash/underscore, 11 chars)
-  if (!/^[a-zA-Z0-9_-]{11}$/.test(body.videoId)) {
+  // Validate video ID format (alphanumeric + dash/underscore, 11+ chars)
+  // Allows suffixes like _summary for different cache variants
+  if (!/^[a-zA-Z0-9_-]{11,}$/.test(body.videoId)) {
     return c.json({ error: 'Invalid video ID format' }, 400);
   }
 
@@ -68,9 +69,11 @@ app.post('/', async (c) => {
   }
 
   // Save to cache (async, don't block response)
-  writeCache(body.videoId, body.voice, result.audioBuffer).then((saved) => {
+  const videoId = body.videoId;
+  const voice = body.voice;
+  writeCache(videoId, voice, result.audioBuffer).then((saved) => {
     if (saved) {
-      console.log(`💾 Cached: ${getCacheKey(body.videoId, body.voice)}`);
+      console.log(`💾 Cached: ${getCacheKey(videoId, voice)}`);
     }
   });
 
