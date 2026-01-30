@@ -10,7 +10,7 @@
   <div class="container">
     <header>
       <h1>🎙️ VoxTube</h1>
-      <p class="tagline">Listen to YouTube videos as audio</p>
+      <p class="tagline">Listen to YouTube video summaries</p>
     </header>
 
     <main>
@@ -24,29 +24,25 @@
             placeholder="https://youtube.com/watch?v=... or video ID"
             autocomplete="off"
           >
-          <button id="fetch-btn" class="primary-btn">Get Transcript</button>
+          <button id="fetch-btn" class="primary-btn">Summarize</button>
         </div>
       </section>
 
-      <!-- Transcript Section (hidden until loaded) -->
-      <section id="transcript-section" class="hidden">
-        <div class="transcript-header">
-          <label for="transcript-text">Transcript</label>
-          <span id="char-count" class="char-count"></span>
+      <!-- Summary Section (hidden until loaded) -->
+      <section id="summary-section" class="hidden">
+        <div class="summary-header">
+          <label for="summary-text">Summary</label>
+          <span id="summary-status" class="summary-status"></span>
         </div>
-        <textarea
-          id="transcript-text"
-          readonly
-          placeholder="Transcript will appear here..."
-        ></textarea>
+        <div id="summary-text" class="summary-content"></div>
       </section>
 
-      <!-- Voice Selection (hidden until transcript loaded) -->
+      <!-- Voice Selection (hidden until summary loaded) -->
       <section id="voice-section" class="hidden">
         <label for="voice-select">Voice</label>
         <div class="voice-row">
           <select id="voice-select"></select>
-          <button id="generate-btn" class="primary-btn">Generate Audio</button>
+          <button id="generate-btn" class="primary-btn">Play Summary</button>
         </div>
       </section>
 
@@ -68,7 +64,8 @@
 
     <footer>
       <p>
-        Powered by <a href="https://github.com/shawn-dsz/youtube-transcribe" target="_blank">youtube-transcribe</a>
+        Powered by <a href="https://github.com/shawn-dsz/youtube-transcribe" target="_blank">youtube-transcribe</a>,
+        <a href="https://claude.ai/code" target="_blank">Claude Code</a>
         & <a href="https://github.com/remsky/Kokoro-FastAPI" target="_blank">Kokoro TTS</a>
       </p>
     </footer>

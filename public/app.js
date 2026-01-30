@@ -1,13 +1,14 @@
 /**
  * VoxTube Frontend
+ * Fetch YouTube transcript, summarize with Claude, play as audio
  */
 
 // DOM Elements
 const urlInput = document.getElementById('url-input');
 const fetchBtn = document.getElementById('fetch-btn');
-const transcriptSection = document.getElementById('transcript-section');
-const transcriptText = document.getElementById('transcript-text');
-const charCount = document.getElementById('char-count');
+const summarySection = document.getElementById('summary-section');
+const summaryText = document.getElementById('summary-text');
+const summaryStatus = document.getElementById('summary-status');
 const voiceSection = document.getElementById('voice-section');
 const voiceSelect = document.getElementById('voice-select');
 const generateBtn = document.getElementById('generate-btn');
@@ -20,6 +21,7 @@ const errorDiv = document.getElementById('error');
 
 // State
 let currentVideoId = null;
+let currentSummaryForSpeech = null;
 let voices = [];
 
 // Initialize
@@ -46,16 +48,16 @@ async function loadVoices() {
 
 // Event listeners
 function setupEventListeners() {
-  // Fetch transcript
-  fetchBtn.addEventListener('click', handleFetchTranscript);
+  // Fetch and summarize
+  fetchBtn.addEventListener('click', handleFetchAndSummarize);
   urlInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') handleFetchTranscript();
+    if (e.key === 'Enter') handleFetchAndSummarize();
   });
 
   // Generate audio
   generateBtn.addEventListener('click', handleGenerateAudio);
 
-  // Auto-paste from clipboard on focus (optional UX)
+  // Auto-paste from clipboard on focus
   urlInput.addEventListener('focus', async () => {
     if (!urlInput.value && navigator.clipboard) {
       try {
@@ -75,8 +77,8 @@ function isYouTubeUrl(str) {
   return /youtube\.com\/watch|youtu\.be\/|youtube\.com\/embed/.test(str);
 }
 
-// Fetch transcript from URL
-async function handleFetchTranscript() {
+// Fetch transcript and summarize
+async function handleFetchAndSummarize() {
   const url = urlInput.value.trim();
   if (!url) {
     showError('Please enter a YouTube URL or video ID');
@@ -88,24 +90,52 @@ async function handleFetchTranscript() {
   setButtonsDisabled(true);
 
   try {
-    const res = await fetch('/api/transcript', {
+    // Step 1: Fetch transcript
+    const transcriptRes = await fetch('/api/transcript', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url }),
     });
 
-    const data = await res.json();
+    const transcriptData = await transcriptRes.json();
 
-    if (!res.ok || data.error) {
-      throw new Error(data.error || 'Failed to fetch transcript');
+    if (!transcriptRes.ok || transcriptData.error) {
+      throw new Error(transcriptData.error || 'Failed to fetch transcript');
     }
 
-    currentVideoId = data.videoId;
-    transcriptText.value = data.transcript;
-    updateCharCount();
+    currentVideoId = transcriptData.videoId;
 
-    // Show transcript and voice sections
-    transcriptSection.classList.remove('hidden');
+    // Step 2: Summarize transcript
+    showLoading('Summarizing with Claude... (this may take a moment)');
+
+    const summarizeRes = await fetch('/api/summarize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        videoId: transcriptData.videoId,
+        transcript: transcriptData.transcript,
+        title: transcriptData.title,
+        channel: transcriptData.channel,
+        duration: transcriptData.duration,
+      }),
+    });
+
+    const summarizeData = await summarizeRes.json();
+
+    if (!summarizeRes.ok || summarizeData.error) {
+      throw new Error(summarizeData.error || 'Failed to summarize transcript');
+    }
+
+    // Store the speech-friendly version for TTS
+    currentSummaryForSpeech = summarizeData.summaryForSpeech;
+
+    // Render summary as formatted HTML
+    summaryText.innerHTML = renderMarkdown(summarizeData.summary);
+    summaryStatus.textContent = summarizeData.cached ? '📦 Cached' : '🤖 Fresh';
+    summaryStatus.className = 'summary-status' + (summarizeData.cached ? ' cached' : '');
+
+    // Show summary and voice sections
+    summarySection.classList.remove('hidden');
     voiceSection.classList.remove('hidden');
     playerSection.classList.add('hidden');
 
@@ -119,20 +149,40 @@ async function handleFetchTranscript() {
   }
 }
 
+// Simple markdown to HTML renderer
+function renderMarkdown(md) {
+  return md
+    // Headers
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    // Bold
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    // Blockquotes
+    .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
+    // Checkbox items
+    .replace(/^- \[ \] (.+)$/gm, '<li class="task">$1</li>')
+    // Unordered lists
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    // Ordered lists
+    .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
+    // Wrap consecutive <li> in <ul>
+    .replace(/(<li[^>]*>.*<\/li>\n?)+/g, '<ul>$&</ul>')
+    // Paragraphs (lines that don't start with HTML)
+    .replace(/^(?!<)(.+)$/gm, '<p>$1</p>')
+    // Clean up empty paragraphs
+    .replace(/<p><\/p>/g, '')
+    // Line breaks
+    .replace(/\n/g, '');
+}
+
 // Generate audio
 async function handleGenerateAudio() {
-  if (!currentVideoId) {
-    showError('No video loaded. Please fetch a transcript first.');
+  if (!currentVideoId || !currentSummaryForSpeech) {
+    showError('No summary loaded. Please fetch a video first.');
     return;
   }
 
-  const text = transcriptText.value.trim();
   const voice = voiceSelect.value;
-
-  if (!text) {
-    showError('Transcript is empty');
-    return;
-  }
 
   if (!voice) {
     showError('Please select a voice');
@@ -140,7 +190,7 @@ async function handleGenerateAudio() {
   }
 
   hideError();
-  showLoading('Generating audio... (this may take a while for long videos)');
+  showLoading('Generating audio...');
   setButtonsDisabled(true);
 
   try {
@@ -148,8 +198,8 @@ async function handleGenerateAudio() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        videoId: currentVideoId,
-        text,
+        videoId: currentVideoId + '_summary', // Use different cache key for summary audio
+        text: currentSummaryForSpeech,
         voice,
       }),
     });
@@ -186,12 +236,6 @@ async function handleGenerateAudio() {
     hideLoading();
     setButtonsDisabled(false);
   }
-}
-
-// Update character count
-function updateCharCount() {
-  const count = transcriptText.value.length;
-  charCount.textContent = `${count.toLocaleString()} characters`;
 }
 
 // UI Helpers
