@@ -18,6 +18,8 @@ const cacheStatus = document.getElementById('cache-status');
 const loading = document.getElementById('loading');
 const loadingText = document.getElementById('loading-text');
 const errorDiv = document.getElementById('error');
+const historySection = document.getElementById('history-section');
+const historyList = document.getElementById('history-list');
 
 // State
 let currentVideoId = null;
@@ -27,6 +29,7 @@ let voices = [];
 // Initialize
 async function init() {
   await loadVoices();
+  await loadHistory();
   setupEventListeners();
 }
 
@@ -44,6 +47,65 @@ async function loadVoices() {
     console.error('Failed to load voices:', err);
     showError('Failed to load voices. Is the server running?');
   }
+}
+
+// Load history
+async function loadHistory() {
+  try {
+    const res = await fetch('/api/history');
+    const data = await res.json();
+    const history = data.history || [];
+
+    if (history.length === 0) {
+      historySection.classList.add('hidden');
+      return;
+    }
+
+    historyList.innerHTML = history
+      .map((item) => `
+        <div class="history-item" data-video-id="${item.videoId}">
+          <div class="history-item-info">
+            <div class="history-item-title">${escapeHtml(item.title)}</div>
+            <div class="history-item-meta">${escapeHtml(item.channel)}${item.duration ? ' • ' + item.duration : ''}</div>
+          </div>
+          <div class="history-item-date">${formatDate(item.createdAt)}</div>
+        </div>
+      `)
+      .join('');
+
+    historySection.classList.remove('hidden');
+
+    // Add click handlers
+    historyList.querySelectorAll('.history-item').forEach((el) => {
+      el.addEventListener('click', () => {
+        const videoId = el.dataset.videoId;
+        urlInput.value = videoId;
+        handleFetchAndSummarize();
+      });
+    });
+  } catch (err) {
+    console.error('Failed to load history:', err);
+  }
+}
+
+// Format date for display
+function formatDate(timestamp) {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
+  return date.toLocaleDateString();
+}
+
+// Escape HTML to prevent XSS
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
 }
 
 // Event listeners
@@ -141,6 +203,9 @@ async function handleFetchAndSummarize() {
 
     // Focus on generate button
     generateBtn.focus();
+
+    // Refresh history (new item may have been added)
+    loadHistory();
   } catch (err) {
     showError(err.message);
   } finally {
