@@ -1,0 +1,21 @@
+{
+  "feature_name": "transcript-summarization",
+  "mode": "standard",
+  "current_phase": "build",
+  "completed_phases": ["setup", "understand", "clarify", "design", "review", "tasks"],
+  "checkpoints": {
+    "understand": { "completed": true },
+    "clarify": { "completed": true },
+    "design": { "completed": true },
+    "review": { "completed": true },
+    "tasks": { "completed": true },
+    "build": {
+      "current_task": 0,
+      "tasks_completed": [],
+      "agents_used": [],
+      "feedback_collected": []
+    }
+  },
+  "started_at": "2026-01-31",
+  "last_updated": "2026-01-31"
+}
