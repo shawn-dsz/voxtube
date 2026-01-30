@@ -12,10 +12,17 @@ const YOUTUBE_REGEX = /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|you
 // Video ID format: 11 chars, alphanumeric + dash + underscore
 const VIDEO_ID_REGEX = /^[a-zA-Z0-9_-]{11}$/;
 
+export interface VideoMetadata {
+  title: string;
+  channel: string;
+  thumbnailUrl?: string;
+}
+
 export interface TranscriptResult {
   success: true;
   videoId: string;
   transcript: string;
+  metadata?: VideoMetadata;
 }
 
 export interface TranscriptError {
@@ -105,10 +112,14 @@ export async function fetchTranscript(urlOrId: string): Promise<TranscriptRespon
       };
     }
 
+    // Fetch video metadata (non-blocking, best effort)
+    const metadata = await fetchVideoMetadata(videoId);
+
     return {
       success: true,
       videoId,
       transcript,
+      metadata,
     };
   } catch (error) {
     console.error('Failed to fetch transcript:', error);
@@ -116,5 +127,37 @@ export async function fetchTranscript(urlOrId: string): Promise<TranscriptRespon
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error fetching transcript',
     };
+  }
+}
+
+interface OEmbedResponse {
+  title?: string;
+  author_name?: string;
+  thumbnail_url?: string;
+}
+
+/**
+ * Fetch video metadata using YouTube oEmbed API
+ * Free, no API key required
+ */
+export async function fetchVideoMetadata(videoId: string): Promise<VideoMetadata | undefined> {
+  try {
+    const url = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
+    const res = await fetch(url);
+
+    if (!res.ok) {
+      return undefined;
+    }
+
+    const data = (await res.json()) as OEmbedResponse;
+
+    return {
+      title: data.title || 'Unknown Video',
+      channel: data.author_name || 'Unknown Channel',
+      thumbnailUrl: data.thumbnail_url,
+    };
+  } catch (error) {
+    console.error('Failed to fetch video metadata:', error);
+    return undefined;
   }
 }

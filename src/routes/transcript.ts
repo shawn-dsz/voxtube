@@ -31,6 +31,8 @@ app.post('/', async (c) => {
   return c.json({
     videoId: result.videoId,
     transcript: result.transcript,
+    title: result.metadata?.title,
+    channel: result.metadata?.channel,
   });
 });
 
