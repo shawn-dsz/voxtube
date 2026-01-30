@@ -6,6 +6,7 @@ import { voicesRoute } from './routes/voices';
 import { transcriptRoute } from './routes/transcript';
 import { synthesizeRoute } from './routes/synthesize';
 import { summarizeRoute } from './routes/summarize';
+import { historyRoute } from './routes/history';
 import { startCleanupInterval, getCacheStats } from './services/cache';
 
 const app = new Hono();
@@ -31,6 +32,7 @@ app.route('/api/voices', voicesRoute);
 app.route('/api/transcript', transcriptRoute);
 app.route('/api/synthesize', synthesizeRoute);
 app.route('/api/summarize', summarizeRoute);
+app.route('/api/history', historyRoute);
 
 // Serve static files from public/
 app.use('/*', serveStatic({ root: './public' }));
