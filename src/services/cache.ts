@@ -1,7 +1,7 @@
 import { readdir, stat, unlink, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import md5 from 'js-md5';
+import { md5 } from 'js-md5';
 import { config } from '../config';
 
 /**
@@ -12,6 +12,22 @@ import { config } from '../config';
  */
 
 const CACHE_EXTENSION = '.mp3';
+const SUMMARY_EXTENSION = '_summary.json';
+
+/**
+ * Summary cache data structure
+ */
+export interface CachedSummary {
+  videoId: string;
+  summary: string;
+  metadata?: {
+    title?: string;
+    channel?: string;
+    duration?: string;
+  };
+  model: string;
+  createdAt: number;
+}
 
 /**
  * Generate cache key (hashed filename)
@@ -158,6 +174,76 @@ export function startCleanupInterval(): void {
       console.log(`🗑️  Cache cleanup: deleted ${result.deleted} expired files`);
     }
   }, intervalMs);
+}
+
+/**
+ * Get summary cache key
+ */
+export function getSummaryCacheKey(videoId: string): string {
+  return md5(videoId) + SUMMARY_EXTENSION;
+}
+
+/**
+ * Get summary cache path
+ */
+export function getSummaryCachePath(videoId: string): string {
+  return join(config.cacheDir, getSummaryCacheKey(videoId));
+}
+
+/**
+ * Read cached summary
+ */
+export async function readSummaryCache(videoId: string): Promise<CachedSummary | null> {
+  const filePath = getSummaryCachePath(videoId);
+
+  try {
+    const stats = await stat(filePath);
+    const ageMs = Date.now() - stats.mtimeMs;
+    const ttlMs = config.cacheTtlDays * 24 * 60 * 60 * 1000;
+
+    if (ageMs > ttlMs) {
+      await unlink(filePath).catch(() => {});
+      return null;
+    }
+
+    const file = Bun.file(filePath);
+    const content = await file.text();
+    return JSON.parse(content) as CachedSummary;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Write summary to cache
+ */
+export async function writeSummaryCache(
+  videoId: string,
+  summary: string,
+  model: string,
+  metadata?: { title?: string; channel?: string; duration?: string }
+): Promise<boolean> {
+  const filePath = getSummaryCachePath(videoId);
+
+  try {
+    if (!existsSync(config.cacheDir)) {
+      await mkdir(config.cacheDir, { recursive: true });
+    }
+
+    const data: CachedSummary = {
+      videoId,
+      summary,
+      metadata,
+      model,
+      createdAt: Date.now(),
+    };
+
+    await Bun.write(filePath, JSON.stringify(data, null, 2));
+    return true;
+  } catch (error) {
+    console.error('Failed to write summary cache:', error);
+    return false;
+  }
 }
 
 /**
