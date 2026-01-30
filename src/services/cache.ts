@@ -312,6 +312,66 @@ export async function getCacheHistory(): Promise<HistoryItem[]> {
 }
 
 /**
+ * Delete all cache files for a specific video
+ * Removes summary JSON and all audio files for this videoId
+ */
+export async function deleteVideoCache(videoId: string): Promise<{ deleted: number }> {
+  let deleted = 0;
+
+  if (!existsSync(config.cacheDir)) {
+    return { deleted: 0 };
+  }
+
+  // Delete summary file
+  const summaryPath = getSummaryCachePath(videoId);
+  try {
+    await unlink(summaryPath);
+    deleted++;
+  } catch {
+    // File doesn't exist or can't be deleted
+  }
+
+  // Delete audio files - need to check all .mp3 files since they're hashed
+  // We'll delete files that match the videoId pattern (with any voice)
+  try {
+    const files = await readdir(config.cacheDir);
+    for (const file of files) {
+      if (!file.endsWith(CACHE_EXTENSION)) continue;
+
+      // Check common voice variants
+      const voices = ['af_heart', 'af_bella', 'af_nicole', 'af_sarah', 'af_sky',
+                      'am_adam', 'am_michael', 'bf_emma', 'bf_isabella', 'bm_george', 'bm_lewis'];
+
+      for (const voice of voices) {
+        const expectedKey = getCacheKey(videoId, voice);
+        if (file === expectedKey) {
+          try {
+            await unlink(join(config.cacheDir, file));
+            deleted++;
+          } catch {
+            // Ignore deletion errors
+          }
+        }
+        // Also check for summary audio variant
+        const summaryKey = getCacheKey(videoId + '_summary', voice);
+        if (file === summaryKey) {
+          try {
+            await unlink(join(config.cacheDir, file));
+            deleted++;
+          } catch {
+            // Ignore deletion errors
+          }
+        }
+      }
+    }
+  } catch {
+    // Ignore read errors
+  }
+
+  return { deleted };
+}
+
+/**
  * Get cache statistics
  */
 export async function getCacheStats(): Promise<{
