@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Background -->
+  <rect width="32" height="32" fill="#0a0a0a"/>
+
+  <!-- Border accent -->
+  <rect x="1" y="1" width="30" height="30" fill="none" stroke="#ff4500" stroke-width="2"/>
+
+  <!-- Audio waveform bars - representing voice/audio -->
+  <rect x="6" y="13" width="3" height="6" fill="#ff4500"/>
+  <rect x="11" y="9" width="3" height="14" fill="#ff4500"/>
+  <rect x="16" y="6" width="3" height="20" fill="#ff4500"/>
+  <rect x="21" y="10" width="3" height="12" fill="#ff4500"/>
+
+  <!-- Small decorative dot -->
+  <circle cx="26" cy="6" r="1.5" fill="#ff4500"/>
+</svg>
