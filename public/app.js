@@ -9,6 +9,7 @@ const fetchBtn = document.getElementById('fetch-btn');
 const summarySection = document.getElementById('summary-section');
 const summaryText = document.getElementById('summary-text');
 const summaryStatus = document.getElementById('summary-status');
+const copyBtn = document.getElementById('copy-btn');
 const voiceSection = document.getElementById('voice-section');
 const voiceSelect = document.getElementById('voice-select');
 const generateBtn = document.getElementById('generate-btn');
@@ -148,6 +149,9 @@ function setupEventListeners() {
 
   // Generate audio
   generateBtn.addEventListener('click', handleGenerateAudio);
+
+  // Copy summary to clipboard
+  copyBtn.addEventListener('click', handleCopyToClipboard);
 
   // Auto-paste from clipboard on focus
   urlInput.addEventListener('focus', async () => {
@@ -330,6 +334,29 @@ async function handleGenerateAudio() {
   } finally {
     hideLoading();
     setButtonsDisabled(false);
+  }
+}
+
+// Copy summary to clipboard
+async function handleCopyToClipboard() {
+  const text = summaryText.innerText;
+  if (!text) return;
+
+  try {
+    await navigator.clipboard.writeText(text);
+
+    // Visual feedback
+    const originalText = copyBtn.textContent;
+    copyBtn.textContent = 'COPIED';
+    copyBtn.classList.add('copied');
+
+    setTimeout(() => {
+      copyBtn.textContent = originalText;
+      copyBtn.classList.remove('copied');
+    }, 2000);
+  } catch (err) {
+    console.error('Failed to copy:', err);
+    showError('Failed to copy to clipboard');
   }
 }
 
