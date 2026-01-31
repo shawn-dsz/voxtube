@@ -1,7 +1,7 @@
 # Architecture: VoxTube
 
 > This document is automatically updated after each checkpoint.
-> Last updated: 2026-01-30 (Design)
+> Last updated: 2026-01-31 (Clipboard Feature)
 
 ## Overview
 VoxTube converts YouTube videos to audio podcasts using TTS. Users paste a URL, select a voice, and listen to the video content narrated by Kokoro TTS.
@@ -14,7 +14,8 @@ VoxTube converts YouTube videos to audio podcasts using TTS. Users paste a URL, 
 
 ### Frontend (Web UI)
 - Vanilla HTML/CSS/JS for instant load
-- URL input, voice selector, transcript display, audio player
+- URL input, voice selector, summary display, audio player
+- Clipboard integration for copying summaries
 
 ### Backend (Bun + Hono)
 - `GET /api/voices` - List Kokoro voices
@@ -75,3 +76,4 @@ voxtube/
 | Setup | Initial | Created architecture document | 2026-01-30 |
 | Understand | Complete | Added overview and problem statement | 2026-01-30 |
 | Design | Complete | Added components, data flow, tech decisions | 2026-01-30 |
+| Feature | Clipboard | Added copy-to-clipboard for summaries | 2026-01-31 |
