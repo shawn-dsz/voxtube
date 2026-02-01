@@ -40,7 +40,7 @@ app.use('/*', serveStatic({ root: './public' }));
 // Start background cache cleanup
 startCleanupInterval();
 
-console.log(`🎙️ VoxTube starting on http://localhost:${config.port}`);
+console.log(`🎙️ VoxTube running at http://voxtube.local:${config.port}`);
 
 export default {
   port: config.port,
