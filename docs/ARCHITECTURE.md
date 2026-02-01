@@ -50,13 +50,124 @@ transcript + voice → POST /api/synthesize → cache check
 ```
 voxtube/
 ├── src/
-│   ├── index.ts
-│   ├── routes/{transcript,synthesize,voices}.ts
-│   ├── services/{youtube,kokoro,cache}.ts
-│   └── config.ts
-├── public/{index.html,style.css,app.js}
+│   ├── index.ts                    # Main server
+│   ├── config.ts                   # Config loader (env or file)
+│   ├── routes/
+│   │   ├── transcript.ts
+│   │   ├── synthesize.ts
+│   │   ├── summarize.ts
+│   │   ├── voices.ts
+│   │   ├── history.ts
+│   │   └── settings.ts             # (desktop mode only)
+│   └── services/
+│       ├── youtube.ts
+│       ├── kokoro.ts
+│       ├── cache.ts
+│       └── llm/                    # Provider abstraction
+│           ├── index.ts            # Provider interface + factory
+│           ├── anthropic.ts        # Anthropic SDK
+│           ├── openai.ts           # OpenAI SDK
+│           ├── gemini.ts           # Google Gemini
+│           └── ollama.ts           # Local Ollama
+├── public/
+│   ├── index.html
+│   ├── style.css
+│   ├── app.js
+│   └── settings.html               # (desktop mode only)
 ├── cache/
-└── .env
+└── .env                            # (hosted mode)
+```
+
+## Deployment Modes
+
+VoxTube supports two deployment modes from the same codebase:
+
+### Mode A: Hosted Web Service
+- You host the server, users access via browser
+- API keys stored as environment variables (your keys)
+- No user accounts needed for basic usage
+- You pay for LLM/TTS API costs
+
+### Mode B: Desktop App (BYOK)
+- Users download and run locally
+- API keys stored in `~/.tubespeak/config.json` (their keys)
+- Settings UI for provider/model selection
+- Zero hosting cost for you
+
+### Architecture for Dual Mode
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                      Frontend                           │
+│              (same HTML/CSS/JS for both)                │
+└─────────────────────────┬───────────────────────────────┘
+                          │
+┌─────────────────────────▼───────────────────────────────┐
+│                    Bun + Hono Server                    │
+│                                                         │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │
+│  │  /api/...   │  │  /settings  │  │  /api/config│     │
+│  │  (existing) │  │ (desktop)   │  │  (desktop)  │     │
+│  └─────────────┘  └─────────────┘  └─────────────┘     │
+└─────────────────────────┬───────────────────────────────┘
+                          │
+┌─────────────────────────▼───────────────────────────────┐
+│                   Config Layer                          │
+│                                                         │
+│  Hosted: process.env.*                                  │
+│  Desktop: ~/.tubespeak/config.json + Settings UI        │
+└─────────────────────────┬───────────────────────────────┘
+                          │
+┌─────────────────────────▼───────────────────────────────┐
+│                   LLM Provider Layer                    │
+│                                                         │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐   │
+│  │Anthropic │ │ OpenAI   │ │ Gemini   │ │ Ollama   │   │
+│  │   SDK    │ │   SDK    │ │   SDK    │ │  (local) │   │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘   │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Key Abstractions Needed
+
+1. **LLM Provider Interface** (`src/services/llm/`)
+   ```typescript
+   interface LLMProvider {
+     name: string;
+     summarize(transcript: string, meta: VideoMetadata): Promise<SummaryResult>;
+   }
+   ```
+
+2. **Config Source** (`src/services/config/`)
+   ```typescript
+   interface ConfigSource {
+     get(key: string): string | undefined;
+     set(key: string, value: string): Promise<void>;  // desktop only
+     getAll(): Record<string, string>;
+   }
+   ```
+
+3. **Mode Detection**
+   ```typescript
+   const isDesktopMode = !process.env.HOSTED_MODE;
+   ```
+
+### Desktop-Only Routes
+
+| Route | Purpose |
+|-------|---------|
+| `GET /api/config` | Get current settings (redacted keys) |
+| `POST /api/config` | Update settings |
+| `GET /settings` | Settings UI page |
+
+### Build Targets
+
+```bash
+# Hosted: standard Bun server
+bun run src/index.ts
+
+# Desktop: compiled binary
+bun build --compile --target=bun-darwin-arm64 src/index.ts -o tubespeak
 ```
 
 ## Security Considerations
@@ -77,3 +188,4 @@ voxtube/
 | Understand | Complete | Added overview and problem statement | 2026-01-30 |
 | Design | Complete | Added components, data flow, tech decisions | 2026-01-30 |
 | Feature | Clipboard | Added copy-to-clipboard for summaries | 2026-01-31 |
+| Design | Dual Mode | Added hosted + desktop deployment architecture | 2026-01-31 |
