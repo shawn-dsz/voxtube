@@ -7,10 +7,15 @@
   "private": true,
   "scripts": {
     "dev": "bun run --watch src/index.ts",
-    "start": "bun run src/index.ts"
+    "start": "bun run src/index.ts",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "bun run build:server && tauri build",
+    "build:server": "bun build --compile --target=bun-darwin-arm64 src/index.ts --outfile src-tauri/binaries/voxtube-server-aarch64 && bun build --compile --target=bun-darwin-x64 src/index.ts --outfile src-tauri/binaries/voxtube-server-x86_64"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@tauri-apps/cli": "2"
   },
   "peerDependencies": {
     "typescript": "^5"
