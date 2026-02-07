@@ -1,0 +1,9 @@
+{
+  "feature_name": "tauri-desktop",
+  "current_phase": "analyze-complete",
+  "completed_phases": ["specify", "clarify", "plan", "review", "tasks", "analyze"],
+  "review_iterations": 3,
+  "last_updated": "2026-02-08T10:15:00Z",
+  "errors": [],
+  "warnings": []
+}

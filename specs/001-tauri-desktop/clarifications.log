@@ -1,0 +1,21 @@
+# Clarifications Log - 001-tauri-desktop
+
+## Q1: Cache directory location
+**Decision**: Use OS standard paths (`~/Library/Application Support/VoxTube/cache/`)
+**Reasoning**: macOS apps can't write to their own bundle. Standard paths ensure persistence for installed apps.
+**Impact**: FR-004 updated
+
+## Q2: External dependency bundling
+**Decision**: Bundle everything (bun build --compile + yt CLI sidecar)
+**Reasoning**: True double-click experience without requiring dev tools in PATH.
+**Impact**: FR-006 added, edge case about missing bun resolved
+
+## Q3: Port conflict handling
+**Decision**: Fail gracefully with error message in window
+**Reasoning**: Safest approach, no backend code changes needed.
+**Impact**: FR-008 added
+
+## Q4: Server logging
+**Decision**: Log files in ~/Library/Application Support/VoxTube/logs/
+**Reasoning**: Essential for diagnosing server crashes in a desktop environment.
+**Impact**: FR-007 added
