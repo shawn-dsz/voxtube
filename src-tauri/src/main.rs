@@ -36,6 +36,12 @@ fn main() {
             // Spawn a thread to start the Bun server so the window
             // renders immediately rather than blocking on startup.
             std::thread::spawn(move || {
+                // In dev mode, beforeDevCommand and devUrl handle the server,
+                // so there is nothing for Rust to do.
+                if cfg!(debug_assertions) {
+                    return;
+                }
+
                 let window = app_handle
                     .get_webview_window("main")
                     .expect("main window not found");

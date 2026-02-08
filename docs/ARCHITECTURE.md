@@ -26,7 +26,6 @@ Paste YouTube URL --> Fetch transcript --> Summarise with Claude --> Narrate wit
 |   Spawns child process with env vars:                            |
 |     PORT=3847                                                    |
 |     CACHE_DIR=~/Library/Application Support/com.voxtube.app/     |
-|     YT_CLI_PATH=<resource_dir>/binaries/yt                       |
 |                                                                  |
 |   +------------------------------------------------------------+|
 |   |                    macOS WebView (WKWebView)                ||
@@ -69,15 +68,15 @@ Paste YouTube URL --> Fetch transcript --> Summarise with Claude --> Narrate wit
 |                                  |   - history listing         | |
 |                                  +-----------------------------+ |
 +------------------------------------------------------------------+
-        |                    |                    |
-        v                    v                    v
-+----------------+  +----------------+  +------------------+
-|   yt CLI       |  |  claude CLI    |  |  Kokoro TTS      |
-| (child process)|  | (child process)|  | (HTTP, port 8880)|
-|                |  |                |  |                  |
-| Fetches YouTube|  | Calls Anthropic|  | OpenAI-compatible|
-| transcripts    |  | API (Sonnet)   |  | /v1/audio/speech |
-+----------------+  +----------------+  +------------------+
+        |                              |
+        v                              v
++----------------+             +------------------+
+|  claude CLI    |             |  Kokoro TTS      |
+| (child process)|             | (HTTP, port 8880)|
+|                |             |                  |
+| Calls Anthropic|             | OpenAI-compatible|
+| API (Sonnet)   |             | /v1/audio/speech |
++----------------+             +------------------+
 ```
 
 ## Data Flow
@@ -94,7 +93,9 @@ User pastes YouTube URL
       v
 [transcript.ts] --> [youtube.ts]
       |                  |
-      |     Bun.spawn(["yt", videoId, "--format", "text"])
+      |     fetch("youtube.com/watch?v=...")  (scrape captions data)
+      |     fetch("youtube.com/api/timedtext?...")  (XML transcript)
+      |     parse XML --> plain text
       |                  |
       |     fetch("youtube.com/oembed?url=...")  (metadata)
       |
@@ -157,7 +158,7 @@ voxtube/
 |   |   +-- voices.ts             # GET  /api/voices
 |   |   +-- history.ts            # GET  /api/history, DELETE /api/history/:id
 |   +-- services/
-|       +-- youtube.ts            # URL validation, yt CLI spawn, oEmbed metadata
+|       +-- youtube.ts            # URL validation, native transcript fetch, oEmbed metadata
 |       +-- anthropic.ts          # Claude CLI spawn, prompt construction, markdown strip
 |       +-- kokoro.ts             # TTS HTTP client, voice list, transcript cleaning
 |       +-- cache.ts              # File-based cache: audio + summary, TTL, cleanup
@@ -176,7 +177,7 @@ voxtube/
 |   +-- Cargo.toml                # Rust dependencies
 |   +-- assets/
 |   |   +-- error.html            # Fallback page for startup errors
-|   +-- binaries/                 # Compiled server + yt CLI (built at package time)
+|   +-- binaries/                 # Compiled server binary (built at package time)
 |   +-- icons/                    # App icons (.icns, .png)
 |
 +-- cache/                        # Runtime cache (gitignored)
@@ -197,12 +198,11 @@ All configuration lives in `src/config.ts`, read from environment variables:
 | `KOKORO_URL`           | `http://localhost:8880` | Kokoro TTS server address          |
 | `CACHE_DIR`            | `./cache`             | Cache directory path                 |
 | `CACHE_TTL_DAYS`       | `7`                   | Cache expiry in days                 |
-| `YT_CLI_PATH`          | `yt`                  | Path to youtube-transcribe CLI       |
 | `MAX_TRANSCRIPT_LENGTH`| `50000`               | Max transcript chars to process      |
 | `CLEANUP_INTERVAL_HOURS`| `12`                 | Background cleanup frequency         |
 | `CLAUDE_CLI_PATH`      | `claude`              | Path to Claude CLI binary            |
 
-In desktop mode, the Tauri Rust layer overrides `PORT`, `CACHE_DIR`, and `YT_CLI_PATH` via env vars when spawning the server process. The TypeScript code requires zero changes.
+In desktop mode, the Tauri Rust layer overrides `PORT` and `CACHE_DIR` via env vars when spawning the server process. The TypeScript code requires zero changes.
 
 ## Caching Strategy
 
@@ -262,14 +262,15 @@ User closes window or quits (Cmd+Q)
 
 | Dependency      | Type           | Purpose                                | Required |
 |-----------------|----------------|----------------------------------------|----------|
-| `yt` CLI        | Child process  | Fetch YouTube transcripts              | Yes      |
 | `claude` CLI    | Child process  | Summarise transcripts (Anthropic API)  | Yes      |
 | Kokoro TTS      | HTTP (port 8880) | Text-to-speech synthesis             | Yes      |
 | YouTube oEmbed  | HTTP           | Video metadata (title, channel)        | Yes      |
 
+YouTube transcript fetching is handled natively via HTTP. The server scrapes the YouTube watch page for captions data and fetches the timedtext XML directly, with no external CLI dependency.
+
 ## Security
 
-- **Command injection prevention**: All CLI tools spawned via `Bun.spawn()` with array arguments, never shell strings
+- **Command injection prevention**: The Claude CLI is spawned via `Bun.spawn()` with array arguments, never shell strings
 - **Path traversal prevention**: Cache filenames are MD5 hashes, not user input
 - **Input validation**: YouTube URL regex, 11-char video ID format, voice whitelist
 - **Input limits**: Transcripts capped at 50,000 characters

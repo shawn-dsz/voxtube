@@ -109,8 +109,6 @@ pub fn start_server(app: &tauri::AppHandle) -> Result<Child, String> {
         .map_err(|e| format!("Failed to resolve resource directory: {}", e))?;
 
     let server_path = resource_dir.join("binaries").join(&binary_name);
-    let yt_cli_path = resource_dir.join("binaries").join("yt");
-
     let app_data_dir = app
         .path()
         .app_data_dir()
@@ -131,7 +129,6 @@ pub fn start_server(app: &tauri::AppHandle) -> Result<Child, String> {
     let cache_dir = app_data_dir.join("cache");
     let mut child = Command::new(&server_path)
         .env("CACHE_DIR", cache_dir.to_string_lossy().as_ref())
-        .env("YT_CLI_PATH", yt_cli_path.to_string_lossy().as_ref())
         .env("PORT", SERVER_PORT.to_string())
         .stdout(Stdio::from(stdout_file))
         .stderr(Stdio::from(stderr_file))
