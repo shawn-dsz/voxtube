@@ -44,3 +44,11 @@ admin/
 
 # Feature planning (not tracked)
 .features/
+
+# Tauri build output
+src-tauri/target/
+src-tauri/gen/
+
+# Compiled server binaries (built at package time)
+src-tauri/binaries/voxtube-server-*
+src-tauri/binaries/yt
