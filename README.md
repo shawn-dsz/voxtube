@@ -39,8 +39,9 @@ VoxTube fetches the transcript from any YouTube video and converts it to audio u
 - 🎤 Choose from multiple TTS voices
 - 💾 Audio caching (avoids regenerating)
 - 🗑️ Automatic cache cleanup (TTL-based)
+- 🧠 Pluggable LLM summarization (Kimmy/Kimi API or Claude CLI)
 - ⚡ Fast—built with Bun + Hono
-- 🔒 Runs 100% locally—no cloud, no API keys
+- 🔒 Local-first runtime with optional cloud LLM API
 
 ---
 
@@ -94,6 +95,12 @@ KOKORO_URL=http://localhost:8880  # Kokoro TTS server
 CACHE_DIR=./cache                 # Where to store generated audio
 CACHE_TTL_DAYS=7                  # How long to keep cached audio
 YT_CLI_PATH=yt                    # Path to youtube-transcribe CLI
+LLM_PROVIDER=openai_compat        # openai_compat or claude_cli
+LLM_API_KEY=...                   # Required for openai_compat
+LLM_BASE_URL=https://api.moonshot.ai/v1
+LLM_MODEL=moonshot-v1-8k
+LLM_TIMEOUT_MS=120000             # LLM request timeout (ms)
+CLAUDE_CLI_PATH=claude            # Used only when LLM_PROVIDER=claude_cli
 ```
 
 ---
@@ -125,6 +132,7 @@ Open http://localhost:3000 in your browser.
 | `/api/health` | GET | Health check with cache stats |
 | `/api/voices` | GET | List available TTS voices |
 | `/api/transcript` | POST | Fetch YouTube transcript |
+| `/api/summarize` | POST | Summarize transcript via configured LLM provider |
 | `/api/synthesize` | POST | Generate TTS audio |
 | `/api/history` | GET | List previously generated audio |
 | `/api/history/:videoId` | DELETE | Remove cached audio |

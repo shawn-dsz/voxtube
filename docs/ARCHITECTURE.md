@@ -1,191 +1,153 @@
 # Architecture: VoxTube
 
-> This document is automatically updated after each checkpoint.
-> Last updated: 2026-01-31 (Clipboard Feature)
+> Last updated: 2026-02-21
 
 ## Overview
-VoxTube converts YouTube videos to audio podcasts using TTS. Users paste a URL, select a voice, and listen to the video content narrated by Kokoro TTS.
+VoxTube converts YouTube videos into listenable audio with optional transcript summaries.
 
-**Problem:** Users don't want to watch entire YouTube videos - they want to extract content and listen to it as audio.
+Core pipeline:
+1. Fetch transcript from a YouTube video.
+2. Optionally summarize transcript with a configurable LLM provider.
+3. Convert full text (or summary text) to audio using Kokoro TTS.
+4. Cache generated assets for fast replay.
 
-**Workflow:** Paste URL → Fetch transcript → Select voice → Generate audio → Play
+## Runtime Components
 
-## Components
+### Frontend (`public/`)
+- Vanilla HTML/CSS/JS UI.
+- Calls backend APIs for transcript fetch, summary generation, TTS generation, and history.
 
-### Frontend (Web UI)
-- Vanilla HTML/CSS/JS for instant load
-- URL input, voice selector, summary display, audio player
-- Clipboard integration for copying summaries
+### API Server (`src/index.ts`)
+- Bun + Hono server.
+- CORS enabled.
+- Static file serving from `public/`.
+- Background cache cleanup started at boot.
 
-### Backend (Bun + Hono)
-- `GET /api/voices` - List Kokoro voices
-- `POST /api/transcript` - Fetch YouTube transcript via CLI
-- `POST /api/synthesize` - Generate TTS audio
+### Route Layer (`src/routes/`)
+- `POST /api/transcript`: fetch transcript and metadata.
+- `POST /api/summarize`: generate summary via configured LLM provider.
+- `POST /api/synthesize`: generate or return cached audio.
+- `GET /api/voices`: list available Kokoro voices.
+- `GET /api/history`: list cached outputs.
+- `DELETE /api/history/:videoId`: delete cached artifacts for a video.
+- `GET /api/health`: health + cache stats.
 
-### Cache Layer
-- File-based storage for generated audio
-- TTL cleanup (7 days) on startup and access
+### Service Layer (`src/services/`)
+- `youtube.ts`: validates YouTube input and shells out to transcript CLI (`yt`).
+- `anthropic.ts`: summarization service with provider routing:
+  - `openai_compat` (default): HTTP `chat/completions` provider model.
+  - `claude_cli`: local CLI fallback path.
+- `kokoro.ts`: TTS integration with Kokoro FastAPI.
+- `cache.ts`: file-based cache read/write/list/delete and cleanup.
+
+### Configuration (`src/config.ts`)
+Environment-driven config:
+- Server + cache: `PORT`, `CACHE_DIR`, `CACHE_TTL_DAYS`, `CLEANUP_INTERVAL_HOURS`.
+- Transcript: `YT_CLI_PATH`, `MAX_TRANSCRIPT_LENGTH`.
+- LLM: `LLM_PROVIDER`, `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL`, `LLM_TIMEOUT_MS`, `CLAUDE_CLI_PATH`.
+- TTS: `KOKORO_URL`.
 
 ## Data Flow
-```
-URL → POST /api/transcript → yt CLI → transcript
-transcript + voice → POST /api/synthesize → cache check
-  └── hit → return cached audio
-  └── miss → Kokoro TTS → save to cache → return audio
+```text
+YouTube URL/ID
+  -> /api/transcript
+  -> yt CLI
+  -> transcript + metadata
+
+transcript + metadata
+  -> /api/summarize
+  -> summarize service
+     -> openai_compat (HTTP) OR claude_cli (local)
+  -> markdown summary
+  -> cached summary JSON
+
+text + voice
+  -> /api/synthesize
+  -> cache lookup
+     -> hit: return audio
+     -> miss: call Kokoro -> write cache -> return audio
 ```
 
-## Technology Decisions
-| Decision | Choice | Rationale | Alternatives Considered |
-|----------|--------|-----------|------------------------|
-| Runtime | Bun | 3x faster than Node | Node.js, Deno |
-| Framework | Hono | Minimal, fast | Express, Fastify |
-| Frontend | Vanilla JS | No build step | React, Vue |
-| Cache | File system | Simple, inspectable | SQLite, Redis |
-| TTS | Kokoro | Local, high quality | OpenAI TTS, ElevenLabs |
+## Key Decisions and Learnings
 
-## API Contracts
-*Pending: Will be populated during Build phase*
+### 1) LLM provider is now API-configurable
+- Previous behavior hard-coupled summary generation to Claude CLI.
+- Current behavior defaults to `openai_compat` for hosted/deployed environments.
+- Claude CLI remains available as a fallback via `LLM_PROVIDER=claude_cli`.
 
-## File Structure
-```
+Why:
+- Easier Docker/server deployment (no local CLI auth dependency).
+- Simpler secret management through environment variables.
+
+### 2) Long transcript handling is configuration-driven
+- `MAX_TRANSCRIPT_LENGTH` default increased to `100000`.
+- Transcript requests fail fast with explicit error when exceeding limit.
+
+Why:
+- Real-world long-form videos exceeded the previous 50k limit.
+- Keeping a configurable cap avoids runaway token/cost scenarios.
+
+### 3) Claude CLI prompt transport uses stdin
+- CLI prompt is written to stdin instead of command args.
+
+Why:
+- Avoids argv length limitations with large transcripts.
+- More robust for long-input summarization workflows.
+
+### 4) Error reporting is explicit and actionable
+- Summarizer now returns concrete provider errors (`HTTP status`, auth, transport failure, empty output).
+- Removed opaque fallback errors during provider failures.
+
+Why:
+- Faster diagnosis in production and local dev.
+- Clear separation of config error vs provider/runtime error.
+
+## Security and Reliability Notes
+- Command injection prevention: CLI executions use argument arrays, not shell interpolation.
+- Input validation: YouTube URL/ID checks before transcript processing.
+- Boundaries: transcript length cap enforced server-side.
+- Cache isolation: cached artifacts are keyed by deterministic cache keys.
+- External dependencies:
+  - Transcript CLI availability (`yt`).
+  - Kokoro service reachability.
+  - LLM API credential validity.
+
+## Deployment Notes
+
+### Recommended hosted profile
+- `LLM_PROVIDER=openai_compat`
+- Set `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL`.
+- Run Kokoro service as a sibling container/service.
+
+### Optional local profile
+- `LLM_PROVIDER=claude_cli`
+- Ensure `CLAUDE_CLI_PATH` is available and authenticated on host.
+
+## File Structure (Current)
+```text
 voxtube/
 ├── src/
-│   ├── index.ts                    # Main server
-│   ├── config.ts                   # Config loader (env or file)
+│   ├── index.ts
+│   ├── config.ts
 │   ├── routes/
-│   │   ├── transcript.ts
-│   │   ├── synthesize.ts
-│   │   ├── summarize.ts
-│   │   ├── voices.ts
 │   │   ├── history.ts
-│   │   └── settings.ts             # (desktop mode only)
+│   │   ├── summarize.ts
+│   │   ├── synthesize.ts
+│   │   ├── transcript.ts
+│   │   └── voices.ts
 │   └── services/
-│       ├── youtube.ts
-│       ├── kokoro.ts
+│       ├── anthropic.ts
 │       ├── cache.ts
-│       └── llm/                    # Provider abstraction
-│           ├── index.ts            # Provider interface + factory
-│           ├── anthropic.ts        # Anthropic SDK
-│           ├── openai.ts           # OpenAI SDK
-│           ├── gemini.ts           # Google Gemini
-│           └── ollama.ts           # Local Ollama
+│       ├── kokoro.ts
+│       └── youtube.ts
 ├── public/
-│   ├── index.html
-│   ├── style.css
-│   ├── app.js
-│   └── settings.html               # (desktop mode only)
-├── cache/
-└── .env                            # (hosted mode)
+└── docs/
+    └── ARCHITECTURE.md
 ```
 
-## Deployment Modes
-
-VoxTube supports two deployment modes from the same codebase:
-
-### Mode A: Hosted Web Service
-- You host the server, users access via browser
-- API keys stored as environment variables (your keys)
-- No user accounts needed for basic usage
-- You pay for LLM/TTS API costs
-
-### Mode B: Desktop App (BYOK)
-- Users download and run locally
-- API keys stored in `~/.tubespeak/config.json` (their keys)
-- Settings UI for provider/model selection
-- Zero hosting cost for you
-
-### Architecture for Dual Mode
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                      Frontend                           │
-│              (same HTML/CSS/JS for both)                │
-└─────────────────────────┬───────────────────────────────┘
-                          │
-┌─────────────────────────▼───────────────────────────────┐
-│                    Bun + Hono Server                    │
-│                                                         │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │
-│  │  /api/...   │  │  /settings  │  │  /api/config│     │
-│  │  (existing) │  │ (desktop)   │  │  (desktop)  │     │
-│  └─────────────┘  └─────────────┘  └─────────────┘     │
-└─────────────────────────┬───────────────────────────────┘
-                          │
-┌─────────────────────────▼───────────────────────────────┐
-│                   Config Layer                          │
-│                                                         │
-│  Hosted: process.env.*                                  │
-│  Desktop: ~/.tubespeak/config.json + Settings UI        │
-└─────────────────────────┬───────────────────────────────┘
-                          │
-┌─────────────────────────▼───────────────────────────────┐
-│                   LLM Provider Layer                    │
-│                                                         │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐   │
-│  │Anthropic │ │ OpenAI   │ │ Gemini   │ │ Ollama   │   │
-│  │   SDK    │ │   SDK    │ │   SDK    │ │  (local) │   │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────┘   │
-└─────────────────────────────────────────────────────────┘
-```
-
-### Key Abstractions Needed
-
-1. **LLM Provider Interface** (`src/services/llm/`)
-   ```typescript
-   interface LLMProvider {
-     name: string;
-     summarize(transcript: string, meta: VideoMetadata): Promise<SummaryResult>;
-   }
-   ```
-
-2. **Config Source** (`src/services/config/`)
-   ```typescript
-   interface ConfigSource {
-     get(key: string): string | undefined;
-     set(key: string, value: string): Promise<void>;  // desktop only
-     getAll(): Record<string, string>;
-   }
-   ```
-
-3. **Mode Detection**
-   ```typescript
-   const isDesktopMode = !process.env.HOSTED_MODE;
-   ```
-
-### Desktop-Only Routes
-
-| Route | Purpose |
-|-------|---------|
-| `GET /api/config` | Get current settings (redacted keys) |
-| `POST /api/config` | Update settings |
-| `GET /settings` | Settings UI page |
-
-### Build Targets
-
-```bash
-# Hosted: standard Bun server
-bun run src/index.ts
-
-# Desktop: compiled binary
-bun build --compile --target=bun-darwin-arm64 src/index.ts -o tubespeak
-```
-
-## Security Considerations
-- **Command injection prevention**: Use array args in Bun.spawn, never shell strings
-- **Path traversal prevention**: Hash cache filenames with MD5
-- **Input validation**: YouTube URL regex, video ID validation, voice whitelist
-- **Input limits**: Max 50k chars for transcript
-
-## Performance Considerations
-- **Background cache cleanup**: Run every 12 hours (non-blocking)
-- **Async startup**: Don't block server ready on cache scan
-- **Text pre-processing**: Clean transcript artifacts before TTS
-
-## Change Log
-| Phase | Checkpoint | Change | Timestamp |
-|-------|------------|--------|-----------|
-| Setup | Initial | Created architecture document | 2026-01-30 |
-| Understand | Complete | Added overview and problem statement | 2026-01-30 |
-| Design | Complete | Added components, data flow, tech decisions | 2026-01-30 |
-| Feature | Clipboard | Added copy-to-clipboard for summaries | 2026-01-31 |
-| Design | Dual Mode | Added hosted + desktop deployment architecture | 2026-01-31 |
+## Changelog
+| Date | Change |
+|------|--------|
+| 2026-02-21 | Updated architecture to match current codebase and provider-configurable LLM design |
+| 2026-02-21 | Documented transcript length increase and long-input summarization considerations |
+| 2026-02-21 | Added explicit deployment guidance for OpenAI-compatible providers and Claude CLI fallback |
