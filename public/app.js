@@ -37,7 +37,7 @@ async function init() {
 // Load available voices
 async function loadVoices() {
   try {
-    const res = await fetch('/api/voices');
+    const res = await fetch('api/voices');
     const data = await res.json();
     voices = data.voices || [];
 
@@ -53,7 +53,7 @@ async function loadVoices() {
 // Load history
 async function loadHistory() {
   try {
-    const res = await fetch('/api/history');
+    const res = await fetch('api/history');
     const data = await res.json();
     const history = data.history || [];
 
@@ -104,7 +104,7 @@ async function loadHistory() {
 // Delete cache for a video
 async function handleDeleteCache(videoId) {
   try {
-    const res = await fetch(`/api/history/${videoId}`, { method: 'DELETE' });
+    const res = await fetch(`api/history/${videoId}`, { method: 'DELETE' });
     const data = await res.json();
 
     if (!res.ok || !data.success) {
@@ -187,7 +187,7 @@ async function handleFetchAndSummarize() {
 
   try {
     // Step 1: Fetch transcript
-    const transcriptRes = await fetch('/api/transcript', {
+    const transcriptRes = await fetch('api/transcript', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url }),
@@ -204,7 +204,7 @@ async function handleFetchAndSummarize() {
     // Step 2: Summarize transcript
     showLoading('Summarizing with Claude... (this may take a moment)');
 
-    const summarizeRes = await fetch('/api/summarize', {
+    const summarizeRes = await fetch('api/summarize', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -293,7 +293,7 @@ async function handleGenerateAudio() {
   setButtonsDisabled(true);
 
   try {
-    const res = await fetch('/api/synthesize', {
+    const res = await fetch('api/synthesize', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
