@@ -1,6 +1,6 @@
 /**
  * Summarize Route
- * POST /api/summarize - Summarize a YouTube transcript using Claude
+ * POST /api/summarize - Summarize a YouTube transcript using configured LLM provider
  */
 
 import { Hono } from 'hono';
@@ -43,7 +43,7 @@ summarizeRoute.post('/', async (c) => {
       });
     }
 
-    // Generate summary using Claude CLI
+    // Generate summary using configured LLM provider
     console.log(`🤖 Generating summary for ${videoId}...`);
     const result = await summarizeTranscript(transcript, { title, channel, duration });
 
