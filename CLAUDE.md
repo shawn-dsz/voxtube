@@ -109,3 +109,56 @@ bun --hot ./index.ts
 ```
 
 For more information, read the Bun API docs in `node_modules/bun-types/docs/**.mdx`.
+
+## Deployment (Nginx Subpath Proxy)
+
+VoxTube is deployed behind nginx at `/voxtube/` subpath. **NEVER use absolute paths - always use relative paths for assets and APIs.**
+
+### ⚠️ CRITICAL: Never use absolute paths
+
+Absolute paths bypass the `/voxtube/` proxy and break the app. When proxied via `https://example.com/voxtube/`:
+
+```javascript
+// ❌ WRONG - Browser requests https://example.com/api/voices (404!)
+fetch('/api/voices')
+
+// ✅ CORRECT - Browser requests https://example.com/voxtube/api/voices
+fetch('api/voices')
+```
+
+### Path Rules Table
+
+| Type | Wrong ❌ | Right ✅ |
+|------|---------|----------|
+| CSS files | `/style.css` | `style.css` |
+| JS files | `/app.js` | `app.js` |
+| Images | `/favicon.svg` | `favicon.svg` |
+| API calls | `/api/voices` | `api/voices` |
+| Links/anchors | `href="/"` | `href="./"` or `href=""` |
+| Fetch URLs | `fetch('/api/x')` | `fetch('api/x')` |
+
+### Why This Matters
+
+- **Absolute paths** (`/api/*`) resolve to `https://example.com/api/*` → nginx routes to the wrong application (OpenClaw at root)
+- **Relative paths** (`api/*`) resolve relative to current URL `https://example.com/voxtube/` → nginx correctly routes to VoxTube
+
+### API_BASE Pattern
+
+Use the `API_BASE` constant for all API calls (see `public/app.js`):
+
+```javascript
+// At top of app.js - no leading slash!
+const API_BASE = 'api';
+
+// Usage
+fetch(`${API_BASE}/voices`)
+fetch(`${API_BASE}/history/${id}`, { method: 'DELETE' })
+```
+
+This makes the pattern explicit and grep-able.
+
+### Testing Proxy Compatibility
+
+1. **Local test**: `curl http://localhost:3001/` - should work
+2. **Via nginx**: Access via `https://shawnpersonalassistant.xyz/voxtube/`
+3. **Check Network tab**: All requests should go to `/voxtube/*` paths, never root `/`
